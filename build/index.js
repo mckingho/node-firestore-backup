@@ -179,6 +179,7 @@ var restoreDocument = function restoreDocument(collectionName, document) {
   });
 };
 
+var baseBackupPath = '';
 var restoreBackup = function restoreBackup(backupPath, restoreAccountDb) {
   var promisesChain = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : [];
 
@@ -193,10 +194,12 @@ var restoreBackup = function restoreBackup(backupPath, restoreAccountDb) {
     } else {
       var documentId = backupPath.split("/").pop();
       var pathWithoutId = backupPath.substr(0, backupPath.lastIndexOf("\/"));
-      var pathWithoutBackupPath = backupPath.substr(backupPath.indexOf("\/"), backupPath.length);
+      var pathWithoutBackupPath = backupPath.substr(baseBackupPath.length, backupPath.length);
       var collectionName = pathWithoutBackupPath.substr(0, pathWithoutBackupPath.lastIndexOf("\/"));
       var documentDataValue = _fs2.default.readFileSync(elementPath);
-      var documentData = (0, _FirestoreDocument.constructFirestoreDocumentObject)(JSON.parse(documentDataValue));
+      // hack this line to read raw firestore document object (without type)
+      // const documentData = constructFirestoreDocumentObject(JSON.parse(documentDataValue))
+      var documentData = JSON.parse(documentDataValue);
       promisesResult.push((0, _FirestoreDocument.saveDocument)(restoreAccountDb, collectionName, documentId, documentData, { merge: mergeData }));
     }
   });
@@ -216,6 +219,7 @@ if (mustExecuteBackup) {
 
 var mustExecuteRestore = !accountDb && !!restoreAccountDb && !!backupPath;
 if (mustExecuteRestore) {
+  baseBackupPath = backupPath;
   var promisesRes = restoreBackup(backupPath, restoreAccountDb);
   Promise.all(promisesRes).then(function (restoration) {
     return console.log('Restoration Completed!');

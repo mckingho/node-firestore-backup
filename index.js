@@ -261,6 +261,7 @@ const restoreDocument = (collectionName: string, document: Object) => {
   })
 }
 
+let baseBackupPath = '';
 const restoreBackup = (
   backupPath: string,
   restoreAccountDb: Object,
@@ -281,10 +282,12 @@ const restoreBackup = (
     } else {
       const documentId = backupPath.split("/").pop();
       const pathWithoutId = backupPath.substr(0, backupPath.lastIndexOf("\/"))
-      const pathWithoutBackupPath = backupPath.substr(backupPath.indexOf("\/"), backupPath.length)
+      const pathWithoutBackupPath = backupPath.substr(baseBackupPath.length, backupPath.length);
       const collectionName = pathWithoutBackupPath.substr(0, pathWithoutBackupPath.lastIndexOf("\/"))
       const documentDataValue = fs.readFileSync(elementPath);
-      const documentData = constructFirestoreDocumentObject(JSON.parse(documentDataValue))
+      // hack this line to read raw firestore document object (without type)
+      // const documentData = constructFirestoreDocumentObject(JSON.parse(documentDataValue))
+      const documentData = JSON.parse(documentDataValue);
       promisesResult.push(saveDocument(
         restoreAccountDb,
         collectionName,
@@ -316,6 +319,7 @@ if (mustExecuteBackup) {
 
 const mustExecuteRestore: boolean = !accountDb && !!restoreAccountDb && !!backupPath
 if (mustExecuteRestore) {
+  baseBackupPath = backupPath;
   const promisesRes = restoreBackup(backupPath, restoreAccountDb)
   Promise.all(promisesRes)
     .then(restoration => console.log(`Restoration Completed!`))
